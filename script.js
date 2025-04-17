@@ -2,6 +2,17 @@
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.worker.min.js";
 
+// =====================
+// SECURITY CONFIGURATION
+// =====================
+// Disable dangerous PDF.js features
+pdfjsLib.disableTextLayer = true; // Prevents potential XSS
+pdfjsLib.disableAutoFetch = true; // Blocks external requests
+pdfjsLib.disableFontFace = true; // Blocks embedded fonts
+
+// Maximum allowed file size (10MB)
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
+
 // DOM elements
 const uploadContainer = document.getElementById("upload-container");
 const viewerContainer = document.getElementById("viewer-container");
@@ -147,7 +158,6 @@ function loadPDF(url) {
   scrollPosition = 0;
   fullscreenPage = null;
 
-  // Set up loading progress callback
   const loadingTask = pdfjsLib.getDocument({
     url: url,
     withCredentials: false,
@@ -160,23 +170,27 @@ function loadPDF(url) {
   };
 
   loadingTask.promise
-    .then((doc) => {
+    .then(async (doc) => {
       pdfDoc = doc;
 
-      // Render all pages
+      // First extract and render chapters
+      const chapters = await extractChapters(pdfDoc);
+      renderChapters(chapters);
+
+      // Then render all pages
       const renderPromises = [];
       for (let i = 1; i <= pdfDoc.numPages; i++) {
         renderPromises.push(renderPage(i));
       }
 
-      return Promise.all(renderPromises).then(() => {
-        loadingOverlay.style.display = "none";
-        uploadContainer.style.display = "none";
-        viewerContainer.style.display = "flex";
+      await Promise.all(renderPromises);
+      loadingOverlay.style.display = "none";
+      uploadContainer.style.display = "none";
+      viewerContainer.style.display = "flex";
+      setupPageVisibilityTracking();
 
-        // Set up page visibility tracking
-        setupPageVisibilityTracking();
-      });
+      // Scroll to first page after load
+      await scrollToPage(1);
     })
     .catch((err) => {
       console.error("Error loading PDF:", err);
@@ -261,10 +275,25 @@ function setupPageVisibilityTracking() {
   });
 }
 
+function updateActiveChapter() {
+  // Remove active class from all chapters
+  document.querySelectorAll(".chapter-item").forEach((item) => {
+    item.classList.remove("active");
+  });
+
+  // Find the chapter that matches the current page
+  const chapters = document.querySelectorAll(".chapter-item");
+  for (let i = 0; i < chapters.length; i++) {
+    const chapter = chapters[i];
+    const chapterPage = chapter.dataset.page;
+    if (chapterPage && parseInt(chapterPage) <= currentPage) {
+      chapter.classList.add("active");
+    }
+  }
+}
+
 function trackCurrentPage() {
   scrollPosition = pdfContainer.scrollTop;
-
-  // Find which page is currently most visible
   let mostVisiblePage = 1;
   let maxVisibility = 0;
 
@@ -284,6 +313,7 @@ function trackCurrentPage() {
   }
 
   currentPage = mostVisiblePage;
+  updateActiveChapter(); // Add this line to update chapter highlighting
 }
 
 function closePDF() {
@@ -549,6 +579,241 @@ function handleKeyDown(e) {
   if (e.key === "h" && e.ctrlKey) {
     togglePacer();
     e.preventDefault();
+  }
+}
+
+// Toggle between login/signup
+function showLogin() {
+  document.getElementById("signup-box").style.display = "none";
+  document.getElementById("login-box").style.display = "block";
+}
+
+function showSignup() {
+  document.getElementById("login-box").style.display = "none";
+  document.getElementById("signup-box").style.display = "block";
+}
+
+// Handle form submissions
+document.getElementById("signup-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+
+  const response = await fetch("auth.php", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "signup",
+      email: formData.get("email"),
+      password: formData.get("password"),
+    }),
+    headers: { "Content-Type": "application/json" },
+  });
+
+  const result = await response.json();
+  if (result.success) {
+    alert("Account created! Please login.");
+    showLogin();
+  } else {
+    alert(result.error || "Signup failed");
+  }
+});
+
+document.getElementById("login-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const formData = new FormData(e.target);
+
+  const response = await fetch("auth.php", {
+    method: "POST",
+    body: JSON.stringify({
+      action: "login",
+      email: formData.get("email"),
+      password: formData.get("password"),
+    }),
+    headers: { "Content-Type": "application/json" },
+  });
+
+  const result = await response.json();
+  if (result.success) {
+    // Save user to localStorage and redirect
+    localStorage.setItem("user", JSON.stringify(result.user));
+    window.location.href = "app.html"; // Your main app page
+  } else {
+    alert(result.error || "Login failed");
+  }
+});
+
+// Check if already logged in
+if (localStorage.getItem("user")) {
+  window.location.href = "app.html";
+}
+
+// Add these to your DOM elements section
+const sidebar = document.getElementById("sidebar");
+const sidebarBtn = document.getElementById("sidebar-btn");
+const sidebarToggle = document.getElementById("sidebar-toggle");
+const sidebarContent = document.getElementById("sidebar-content");
+const chapterList = document.getElementById("chapter-list");
+
+// Add this to your state variables
+let isSidebarVisible = false;
+
+// Add this to your init() function
+sidebarBtn.addEventListener("click", toggleSidebar);
+sidebarToggle.addEventListener("click", toggleSidebar);
+
+// Add these new functions
+function toggleSidebar() {
+  isSidebarVisible = !isSidebarVisible;
+  sidebar.classList.toggle("visible", isSidebarVisible);
+  document.body.classList.toggle("sidebar-visible", isSidebarVisible);
+}
+
+function extractChapters(pdfDoc) {
+  return pdfDoc.getOutline().then((outline) => {
+    if (!outline) {
+      // If no outline exists, try to detect chapters from headings
+      return detectChaptersFromContent(pdfDoc);
+    }
+    return outline;
+  });
+}
+
+async function detectChaptersFromContent(pdfDoc) {
+  const chapters = [];
+  // We'll check the first few pages for headings
+  const maxPagesToCheck = Math.min(10, pdfDoc.numPages);
+
+  for (let i = 1; i <= maxPagesToCheck; i++) {
+    const page = await pdfDoc.getPage(i);
+    const textContent = await page.getTextContent();
+
+    // Look for large text that might be chapter headings
+    textContent.items.forEach((item) => {
+      if (item.transform && item.height > 20) {
+        // Larger font size
+        chapters.push({
+          title: item.str,
+          dest: [i, { name: "XYZ" }, 0, null, null], // Link to page
+        });
+      }
+    });
+
+    // Stop if we found some chapters
+    if (chapters.length > 0) break;
+  }
+
+  // Fallback: just use page numbers
+  if (chapters.length === 0) {
+    for (let i = 1; i <= Math.min(10, pdfDoc.numPages); i++) {
+      chapters.push({
+        title: `Page ${i}`,
+        dest: [i, { name: "XYZ" }, 0, null, null],
+      });
+    }
+  }
+
+  return chapters;
+}
+
+async function resolveDestination(dest) {
+  if (Array.isArray(dest)) {
+    return {
+      pageNumber: dest[0],
+      destArray: dest,
+    };
+  }
+
+  if (typeof dest === "string") {
+    const destArray = await pdfDoc.getDestination(dest);
+    return {
+      pageNumber: destArray[0].num + 1,
+      destArray: destArray,
+    };
+  }
+
+  return {
+    pageNumber: 1, // Fallback to first page
+    destArray: [1, { name: "XYZ" }, 0, null, null],
+  };
+}
+
+function renderChapters(chapters) {
+  chapterList.innerHTML = "";
+
+  if (!chapters || chapters.length === 0) {
+    chapterList.innerHTML = '<li class="chapter-item">No chapters found</li>';
+    return;
+  }
+
+  chapters.forEach((chapter, index) => {
+    const li = document.createElement("li");
+    li.className = "chapter-item";
+    li.textContent = chapter.title || `Chapter ${index + 1}`;
+    li.dataset.chapterIndex = index;
+
+    li.addEventListener("click", async () => {
+      // Highlight clicked chapter
+      document.querySelectorAll(".chapter-item").forEach((item) => {
+        item.classList.remove("active");
+      });
+      li.classList.add("active");
+
+      // Navigate to chapter
+      await navigateToChapter(chapter);
+    });
+
+    chapterList.appendChild(li);
+  });
+}
+
+async function navigateToChapter(chapter) {
+  if (!chapter.dest) return;
+
+  try {
+    let pageNumber;
+
+    // Handle different destination types
+    if (Array.isArray(chapter.dest)) {
+      // Simple array destination [pageNum, ...]
+      pageNumber = chapter.dest[0];
+    } else if (typeof chapter.dest === "string") {
+      // Named destination - need to look up
+      const destArray = await pdfDoc.getDestination(chapter.dest);
+      pageNumber = destArray[0].num + 1; // Convert to 1-based
+    } else {
+      // Try to extract page number from object
+      pageNumber =
+        chapter.dest.pageNumber ||
+        (chapter.dest[0]?.num ?? chapter.dest[0]) + 1;
+    }
+
+    if (pageNumber) {
+      await scrollToPage(pageNumber);
+    }
+  } catch (error) {
+    console.error("Error navigating to chapter:", error);
+    // Fallback to first page if navigation fails
+    if (pdfDoc) {
+      await scrollToPage(1);
+    }
+  }
+}
+
+function scrollToPage(pageNumber) {
+  const pageElement = document.getElementById(`page-${pageNumber}`);
+  if (pageElement) {
+    // Calculate position accounting for header height
+    const headerHeight = document.querySelector("header").offsetHeight;
+    const elementPosition = pageElement.getBoundingClientRect().top;
+    const offsetPosition = elementPosition + window.pageYOffset - headerHeight;
+
+    window.scrollTo({
+      top: offsetPosition,
+      behavior: "smooth",
+    });
+
+    // Update current page and highlight in sidebar
+    currentPage = pageNumber;
+    updateActiveChapter();
   }
 }
 

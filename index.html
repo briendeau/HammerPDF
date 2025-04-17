@@ -3,6 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               script-src 'self' https://cdnjs.cloudflare.com;
+               style-src 'self' 'unsafe-inline';
+               object-src 'none';
+               frame-src 'none'"
+    /> -->
     <title>Hammer PDF Pro | Premium Document Viewer</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
@@ -14,6 +22,27 @@
         <div class="user-avatar"></div>
       </div>
     </header>
+
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h3>Document Outline</h3>
+        <button class="sidebar-toggle" id="sidebar-toggle">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
+        </button>
+      </div>
+      <div class="sidebar-content" id="sidebar-content">
+        <ul class="chapter-list" id="chapter-list"></ul>
+      </div>
+    </div>
 
     <div class="upload-container" id="upload-container">
       <div class="hero-section">
@@ -80,6 +109,19 @@
             Untitled Document
           </div>
         </div>
+        <button id="sidebar-btn" class="icon-btn" title="Toggle sidebar">
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M3 3h18v18H3z" />
+            <path d="M9 3v18M3 9h18M3 15h18" />
+          </svg>
+        </button>
         <div class="center-controls">
           <button id="zoom-out-btn" class="icon-btn" title="Zoom out">-</button>
           <span id="zoom-level">100%</span>
@@ -232,6 +274,104 @@
         <path d="M18 6L6 18M6 6l12 12" />
       </svg>
     </div>
+
+    <div class="auth-container">
+      <!-- Pricing Tiers -->
+      <div class="pricing-tiers">
+        <div class="tier-card" data-tier="pro">
+          <h3>Free</h3>
+          <div class="price">0<span>/month</span></div>
+          <ul class="features">
+            <li>✓ All premium PDF tools</li>
+            <li>✓ 100 documents/month</li>
+            <li>✓ Advanced editing</li>
+          </ul>
+          <button class="select-tier" onclick="selectTier('pro')">
+            Get Started
+          </button>
+        </div>
+
+        <div class="tier-card featured" data-tier="business">
+          <div class="popular-badge">Most Popular</div>
+          <h3>Pro</h3>
+          <div class="price">$10<span>/month</span></div>
+          <ul class="features">
+            <li>✓ Everything in Pro</li>
+            <li>✓ Unlimited documents</li>
+            <li>✓ Team collaboration</li>
+            <li>✓ Priority support</li>
+          </ul>
+          <button class="select-tier" onclick="selectTier('business')">
+            Get Started
+          </button>
+        </div>
+      </div>
+
+      <!-- Auth Forms -->
+      <div class="auth-forms">
+        <!-- Signup Form (Default) -->
+        <form id="signup-form" class="auth-form active">
+          <h2>Create your account</h2>
+
+          <div class="form-group">
+            <input type="email" placeholder="Email address" required />
+          </div>
+          <div class="form-group">
+            <input
+              type="password"
+              placeholder="Create password"
+              required
+              minlength="8"
+            />
+          </div>
+
+          <button type="submit" class="auth-submit">Continue</button>
+
+          <div class="auth-footer">
+            Already have an account?
+            <a href="#" onclick="showLogin()">Log in</a>
+          </div>
+        </form>
+
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form">
+          <h2>Welcome back</h2>
+
+          <div class="social-login">
+            <button type="button" class="google-btn" onclick="authWithGoogle()">
+              <img
+                src="https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg"
+                alt="Google"
+              />
+              Continue with Google
+            </button>
+          </div>
+
+          <div class="divider">or</div>
+
+          <div class="form-group">
+            <input type="email" placeholder="Email address" required />
+          </div>
+          <div class="form-group">
+            <input type="password" placeholder="Password" required />
+          </div>
+
+          <button type="submit" class="auth-submit">Log in</button>
+
+          <div class="auth-footer">
+            Don't have an account?
+            <a href="#" onclick="showSignup()">Sign up</a>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Add these to your head section -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <script src="https://js.stripe.com/v3/"></script>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.12.313/pdf.min.js"></script>
     <script src="script.js"></script>
