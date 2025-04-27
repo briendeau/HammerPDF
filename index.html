@@ -11,7 +11,7 @@
                object-src 'none';
                frame-src 'none'"
     /> -->
-    <title>Hammer PDF Pro | Premium Document Viewer</title>
+    <title>Hammer PDF</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -145,6 +145,12 @@
               </svg>
             </button>
           </div>
+          <!-- In your toolbar div, near the rotate button -->
+          <div class="tool-control">
+            <div id="read-counter" class="read-counter" title="Pages read">
+              <span id="read-count">0</span>/<span id="total-pages">0</span>
+            </div>
+          </div>
           <div class="tool-control">
             <button id="pacer-btn" class="icon-btn" title="Reading pacer">
               <svg
@@ -160,6 +166,7 @@
               </svg>
             </button>
           </div>
+
           <div class="tool-control color-picker-container">
             <button id="color-btn" class="icon-btn" title="Color filters">
               <svg

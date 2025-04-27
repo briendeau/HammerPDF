@@ -9,7 +9,8 @@
   --filter-overlay: none;
   --filter-opacity: 0.3;
   --rotation-angle: 0deg;
-  --pacer-color: rgba(74, 107, 255, 0.3);
+  --pacer-color: rgba(83, 255, 74, 0.3);
+  /* --pacer-color: rgba(74, 107, 255, 0.3); Default blue*/
   --pacer-height: 40px;
   --zoom-level: 1;
   --success-color: #4caf50;
@@ -1015,4 +1016,158 @@ header {
   width: 3px;
   background-color: var(--primary-color);
   border-radius: 0 3px 3px 0;
+}
+
+.page-number {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 12px;
+}
+
+/* ===================== */
+/* PAGE READ CHECKBOX CSS */
+/* ===================== */
+
+.page-container {
+  position: relative; /* Needed for absolute positioning of page number */
+}
+
+.page-number {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+}
+
+.read-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid white;
+  border-radius: 4px;
+  background-color: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.read-checkbox:checked {
+  background-color: #4a6bff;
+  border-color: #4a6bff;
+  animation: checkboxPop 0.4s ease;
+}
+
+.read-checkbox:checked::after {
+  content: "✓";
+  position: absolute;
+  color: white;
+  font-size: 12px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+@keyframes checkboxPop {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ===================== */
+/* READ COUNTER IN TOOLBAR */
+/* ===================== */
+
+.read-counter {
+  background-color: rgba(74, 107, 255, 0.1);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.3s;
+  margin-left: 10px;
+}
+
+.read-counter.highlight {
+  animation: counterPulse 0.6s ease;
+}
+
+@keyframes counterPulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ===================== */
+/* FIREWORK ANIMATIONS */
+/* ===================== */
+
+.firework {
+  position: fixed;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: firework 1s ease-out forwards;
+  z-index: 1000;
+  opacity: 1;
+}
+
+@keyframes firework {
+  0% {
+    transform: translate(0, 0);
+    opacity: 1;
+    width: 6px;
+    height: 6px;
+  }
+  100% {
+    transform: translate(var(--x), var(--y));
+    opacity: 0;
+    width: 2px;
+    height: 2px;
+  }
+}
+
+/* ===================== */
+/* TOOLBAR LAYOUT ADJUSTMENT */
+/* ===================== */
+
+.toolbar .right-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tool-control {
+  display: flex;
+  align-items: center;
 }
